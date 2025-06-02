@@ -61,7 +61,6 @@ class Block:
         self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size,
                                                  fill="white")
         self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="End")
-        self.text = self.canvas.create_text(self.x, self.y, text="Condition")
         self.bindEvents()
 
     def createInput(self):
@@ -229,6 +228,7 @@ class Block:
             self.connectedToBlock.connectedFromBlocks.remove(self)
         self.canvas.delete(self.item)
         self.canvas.delete(self.text)
+        arrowForDelete = []
         for arrow in list(self.arrow):
             arrow.delete()
             arrowForDelete.append(arrow)
