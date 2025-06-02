@@ -18,6 +18,7 @@ class App:
         tk.Button(button_holder, text="Додати змінну", command=self.addVariable).pack(pady=5)
         tk.Button(button_holder, text="Додати умову", command=self.addCondition).pack(pady=5)
         tk.Button(button_holder, text="Додати введення", command=self.addInput).pack(pady=5)
+        tk.Button(button_holder, text="Додати операцію", command=self.addOperation).pack(pady=5)
 
     def addStart(self):
         Block.Block(self.canvas, 70, 70, "start")
@@ -30,3 +31,6 @@ class App:
 
     def addInput(self):
         Block.Block(self.canvas, 70, 70, "input")
+
+    def addOperation(self):
+        Block.Block(self.canvas, 70, 70, "operation")

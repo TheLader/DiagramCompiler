@@ -16,6 +16,7 @@ class Block:
         self.variableName = None
         self.variableValue = None
         self.inputVariable = None
+        self.operationText = None
         self._drag_data = {"x": 0, "y": 0}
         self.connectedToBlock = None
         self.connectedFromBlocks = []
@@ -32,6 +33,8 @@ class Block:
                 self.createCondition()
             case "input":
                 self.createInput()
+            case "operation":
+                self.createOperation()
 
     def createStart(self):
         self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size*2, self.y + self.size, fill="white")
@@ -66,6 +69,11 @@ class Block:
         center_x = (x1 + x3) // 2
         center_y = (y1 + y3) // 2
         self.text = self.canvas.create_text(center_x, center_y, text="Input")
+        self.bindEvents()
+
+    def createOperation(self):
+        self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size, fill="white")
+        self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="Operation")
         self.bindEvents()
 
     def bindEvents(self):
@@ -131,7 +139,9 @@ class Block:
         if self.type == "input":
             self.menu.add_command(label="Ввести змінну", command=self.setInputVariable)
             self.menu.add_command(label="Видалити", command=self.delete)
-
+        if self.type == "operation":
+            self.menu.add_command(label="Встановити операцію", command=self.setOperationText)
+            self.menu.add_command(label="Видалити", command=self.delete)
         self.menu.post(event.x_root, event.y_root)
 
     def startTrueArrow(self):
@@ -182,6 +192,12 @@ class Block:
         self.inputVariable = text
         self.updateText()
 
+    def setOperationText(self):
+        text = simpledialog.askstring("Операція", "Введіть текст операції")
+        if text:
+            self.operationText = text
+            self.updateText()
+
     def updateText(self):
         self.canvas.delete(self.text)
         x, y = self.get_center()
@@ -189,6 +205,8 @@ class Block:
             display = f"{self.variableName}={self.variableValue}" if self.variableName else ""
         elif self.type == "input":
             display = f"input({self.inputVariable})" if self.inputVariable else ""
+        elif self.type == "operation":
+            display = self.operationText if self.operationText else "Operation"
         else:
             display = self.type
         self.text = self.canvas.create_text(x, y, text=display)
