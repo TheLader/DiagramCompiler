@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import simpledialog
-from venv import create
-import Arrow
 
 class Block:
     _arrow = None
     _condition = None
+
     def __init__(self, canvas, x, y, type):
         self.canvas = canvas
         self.x = x
@@ -16,6 +15,7 @@ class Block:
         self.text = None
         self.variableName = None
         self.variableValue = None
+        self.inputVariable = None
         self._drag_data = {"x": 0, "y": 0}
         self.connectedToBlock = None
         self.connectedFromBlocks = []
@@ -30,27 +30,45 @@ class Block:
                 self.createVariable()
             case "condition":
                 self.createCondition()
+            case "input":
+                self.createInput()
 
     def createStart(self):
         self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size*2, self.y + self.size, fill="white")
-        self.text = self.canvas.create_text(self.x+self.size, self.y+self.size/2, text="Start")
-        self.canvas.tag_bind(self.item, "<ButtonPress-1>", self.onLeftClick)
-        self.canvas.tag_bind(self.item, "<B1-Motion>", self.onDrag)
-        self.canvas.tag_bind(self.item, "<Button-3>", self.onRightClick)
+        self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="Start")
+        self.bindEvents()
 
     def createVariable(self):
-        self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size,
-                                                 fill="white")
+        self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size, fill="white")
         self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="")
-        self.canvas.tag_bind(self.item, "<ButtonPress-1>", self.onLeftClick)
-        self.canvas.tag_bind(self.item, "<B1-Motion>", self.onDrag)
-        self.canvas.tag_bind(self.item, "<Button-3>", self.onRightClick)
+        self.bindEvents()
 
     def createCondition(self):
         half = self.size
         points = [self.x, self.y - half, self.x + half, self.y, self.x, self.y + half, self.x - half, self.y]
         self.item = self.canvas.create_polygon(points, fill="white", outline="black")
-        self.text = self.canvas.create_text(self.x , self.y , text="Condition")
+        self.text = self.canvas.create_text(self.x, self.y, text="Condition")
+        self.bindEvents()
+
+    def createInput(self):
+        # Draw parallelogram
+        offset = 20
+        x1, y1 = self.x + offset, self.y
+        x2, y2 = self.x + self.size * 2 + offset, self.y
+        x3, y3 = self.x + self.size * 2, self.y + self.size
+        x4, y4 = self.x, self.y + self.size
+
+        self.item = self.canvas.create_polygon(
+            [x1, y1, x2, y2, x3, y3, x4, y4],
+            fill="white",
+            outline="black"
+        )
+        center_x = (x1 + x3) // 2
+        center_y = (y1 + y3) // 2
+        self.text = self.canvas.create_text(center_x, center_y, text="Input")
+        self.bindEvents()
+
+    def bindEvents(self):
         self.canvas.tag_bind(self.item, "<ButtonPress-1>", self.onLeftClick)
         self.canvas.tag_bind(self.item, "<B1-Motion>", self.onDrag)
         self.canvas.tag_bind(self.item, "<Button-3>", self.onRightClick)
@@ -91,20 +109,16 @@ class Block:
 
     def onRightClick(self, event):
         self.menu = tk.Menu(self.canvas, tearoff=0)
-        if(self.type == "start"):
+        if self.type in {"start", "variable", "input"}:
             if not self.arrow:
                 self.menu.add_command(label="Додати стрілку", command=self.startArrow)
             else:
                 self.menu.add_command(label="Видалити стрілку", command=self.deleteArrow)
-        if(self.type == "variable"):
-            if not self.arrow:
-                self.menu.add_command(label="Додати стрілку", command=self.startArrow)
-            else:
-                self.menu.add_command(label="Видалити стрілку", command=self.deleteArrow)
-            self.menu.add_command(label="Задати імя змінної", command=self.setVariableName)
+        if self.type == "variable":
+            self.menu.add_command(label="Задати ім’я змінної", command=self.setVariableName)
             self.menu.add_command(label="Задати значення змінної", command=self.setVariableValue)
             self.menu.add_command(label="Видалити", command=self.delete)
-        if(self.type == "condition"):
+        if self.type == "condition":
             if self.conditionTrueBlock is None:
                 self.menu.add_command(label="Виконання умови", command=self.startTrueArrow)
             else:
@@ -113,6 +127,9 @@ class Block:
                 self.menu.add_command(label="Невиконання умови", command=self.startFalseArrow)
             else:
                 self.menu.add_command(label="Видалити невиконання умови", command=self.deleteFalseArrow)
+            self.menu.add_command(label="Видалити", command=self.delete)
+        if self.type == "input":
+            self.menu.add_command(label="Ввести змінну", command=self.setInputVariable)
             self.menu.add_command(label="Видалити", command=self.delete)
 
         self.menu.post(event.x_root, event.y_root)
@@ -123,81 +140,82 @@ class Block:
     def startFalseArrow(self):
         self.startArrow(False)
 
-    def startArrow(self, condition = None):
+    def startArrow(self, condition=None):
         Block._arrow = self
         Block._condition = condition
 
-    def createArrow(self, block, text = ""):
+    def createArrow(self, block, text=""):
+        import Arrow  # avoid cyclic import
         self.arrow.append(Arrow.Arrow(self.canvas, self, block, text))
 
     def deleteArrow(self):
-        arrowForDelete = []
-        for arrow in self.arrow:
+        for arrow in list(self.arrow):
             arrow.delete()
-            arrowForDelete.append(arrow)
-        for arrow in arrowForDelete:
             self.arrow.remove(arrow)
 
     def deleteTrueArrow(self):
-        deleteArrow = None
-        for arrow in self.arrow:
+        for arrow in list(self.arrow):
             if self.conditionTrueBlock is arrow.target:
-                deleteArrow = arrow
-        deleteArrow.delete()
-        self.arrow.remove(deleteArrow)
+                arrow.delete()
+                self.arrow.remove(arrow)
         self.conditionTrueBlock = None
 
     def deleteFalseArrow(self):
-        deleteArrow = None
-        for arrow in self.arrow:
+        for arrow in list(self.arrow):
             if self.conditionFalseBlock is arrow.target:
-                deleteArrow = arrow
-        deleteArrow.delete()
-        self.arrow.remove(deleteArrow)
+                arrow.delete()
+                self.arrow.remove(arrow)
         self.conditionFalseBlock = None
 
     def setVariableName(self):
         text = simpledialog.askstring("Вписати текст", "Назва змінної")
-        self.canvas.delete(self.text)
         self.variableName = text
-        x, y =self.get_center()
-        self.text = self.canvas.create_text(x, y, text=f"{self.variableName}={self.variableValue}")
+        self.updateText()
 
     def setVariableValue(self):
         text = simpledialog.askstring("Вписати текст", "Значення змінної")
-        self.canvas.delete(self.text)
         self.variableValue = text
-        x, y =self.get_center()
-        self.text = self.canvas.create_text(x, y, text=f"{self.variableName}={self.variableValue}")
+        self.updateText()
+
+    def setInputVariable(self):
+        text = simpledialog.askstring("Введення", "Назва змінної для введення")
+        self.inputVariable = text
+        self.updateText()
+
+    def updateText(self):
+        self.canvas.delete(self.text)
+        x, y = self.get_center()
+        if self.type == "variable":
+            display = f"{self.variableName}={self.variableValue}" if self.variableName else ""
+        elif self.type == "input":
+            display = f"input({self.inputVariable})" if self.inputVariable else ""
+        else:
+            display = self.type
+        self.text = self.canvas.create_text(x, y, text=display)
 
     def delete(self):
         for connectedFromBlock in self.connectedFromBlocks:
-            for arrow in connectedFromBlock.arrow:
+            for arrow in list(connectedFromBlock.arrow):
                 if arrow.target == self:
                     arrow.delete()
                     connectedFromBlock.arrow.remove(arrow)
             connectedFromBlock.conditionTrueBlock = None
             connectedFromBlock.conditionFalseBlock = None
             connectedFromBlock.connectedToBlock = None
-        if self.connectedToBlock is not None:
+        if self.connectedToBlock:
             self.connectedToBlock.connectedFromBlocks.remove(self)
         self.canvas.delete(self.item)
         self.canvas.delete(self.text)
-        arrowForDelete = []
-        for arrow in self.arrow:
+        for arrow in list(self.arrow):
             arrow.delete()
-            arrowForDelete.append(arrow)
-        for arrow in arrowForDelete:
             self.arrow.remove(arrow)
-
-
 
     def get_center(self):
         coords = self.canvas.coords(self.item)
-        if len(coords) == 4:  # прямокутник
+        if len(coords) == 4:
             x1, y1, x2, y2 = coords
             return (x1 + x2) // 2, (y1 + y2) // 2
-        elif len(coords) == 8:  # ромб
+        elif len(coords) == 8:
             xs = coords[::2]
             ys = coords[1::2]
             return sum(xs) // 4, sum(ys) // 4
@@ -205,20 +223,15 @@ class Block:
     def get_border_point(self, other_center):
         x0, y0 = self.get_center()
         x1, y1 = other_center
-
         coords = self.canvas.coords(self.item)
 
-        if len(coords) == 4:  # Прямокутник
+        if len(coords) == 4:
             x_left, y_top, x_right, y_bottom = coords
-            w = (x_right - x_left) / 2
-            h = (y_bottom - y_top) / 2
-
-            dx = x1 - x0
-            dy = y1 - y0
+            w, h = (x_right - x_left) / 2, (y_bottom - y_top) / 2
+            dx, dy = x1 - x0, y1 - y0
 
             if dx == 0:
                 return (x0, y0 + h * (1 if dy > 0 else -1))
-
             slope = dy / dx
             if abs(slope) < h / w:
                 x = x0 + w * (1 if dx > 0 else -1)
@@ -226,50 +239,28 @@ class Block:
             else:
                 y = y0 + h * (1 if dy > 0 else -1)
                 x = x0 + (y - y0) / slope
-
             return (x, y)
 
-        elif len(coords) == 8:  # Ромб
-            # Точки: [top, right, bottom, left]
+        elif len(coords) == 8:
             points = [(coords[i], coords[i + 1]) for i in range(0, 8, 2)]
-
             def line_intersection(p1, p2, p3, p4):
-                """Перетин відрізків p1-p2 і p3-p4"""
                 x1, y1 = p1
                 x2, y2 = p2
                 x3, y3 = p3
                 x4, y4 = p4
-
                 denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
                 if denom == 0:
-                    return None  # паралельні
-
-                px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denom
-                py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom
-
-                # перевірка, чи точка перетину належить обом відрізкам
-                def between(a, b, c):
-                    return min(a, b) <= c <= max(a, b)
-
-                if (between(x1, x2, px) and between(y1, y2, py) and
-                        between(x3, x4, px) and between(y3, y4, py)):
+                    return None
+                px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / denom
+                py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denom
+                def between(a, b, c): return min(a, b) <= c <= max(a, b)
+                if all([between(*p, q) for p, q in zip([(x1, x2), (y1, y2), (x3, x4), (y3, y4)], [px, py, px, py])]):
                     return (px, py)
                 return None
 
-            # Сторони ромба: [top->right, right->bottom, bottom->left, left->top]
-            sides = [
-                (points[0], points[1]),
-                (points[1], points[2]),
-                (points[2], points[3]),
-                (points[3], points[0])
-            ]
-
-            for side_start, side_end in sides:
-                intersection = line_intersection((x0, y0), (x1, y1), side_start, side_end)
-                if intersection:
-                    return intersection
-
-            return (x0, y0)  # fallback
-
-        else:
-            return self.get_center()
+            sides = [(points[i], points[(i + 1) % 4]) for i in range(4)]
+            for a, b in sides:
+                inter = line_intersection((x0, y0), (x1, y1), a, b)
+                if inter:
+                    return inter
+        return self.get_center()
