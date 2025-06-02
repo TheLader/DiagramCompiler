@@ -37,6 +37,8 @@ class Block:
                 self.createOperation()
             case "output":
                 self.createOutput()
+            case "end":
+                self.createEnd()
 
     def createStart(self):
         self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size*2, self.y + self.size, fill="white")
@@ -53,6 +55,12 @@ class Block:
         points = [self.x, self.y - half, self.x + half, self.y, self.x, self.y + half, self.x - half, self.y]
         self.item = self.canvas.create_polygon(points, fill="white", outline="black")
         self.text = self.canvas.create_text(self.x, self.y, text="Condition")
+        self.bindEvents()
+
+    def createEnd(self):
+        self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size,
+                                                 fill="white")
+        self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="End")
         self.bindEvents()
 
     def createInput(self):

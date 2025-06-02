@@ -9,6 +9,7 @@ class App:
         self.canvas = tk.Canvas(self.root, width=700, height=500, bg="white")
         self.canvas.pack(side="left", fill="both", expand=True)
         Block.Block(self.canvas, 70, 70, "start")
+        Block.Block(self.canvas, 70, 70, "end")
         sidebar = tk.Frame(self.root)
         sidebar.pack(side="right", fill="y")
         button_holder = tk.Frame(sidebar)
