@@ -16,6 +16,7 @@ class Block:
         self.text = None
         self.variableName = None
         self.variableValue = None
+        self.condition = None
         self._drag_data = {"x": 0, "y": 0}
         self.connectedToBlock = None
         self.connectedFromBlocks = []
@@ -30,6 +31,8 @@ class Block:
                 self.createVariable()
             case "condition":
                 self.createCondition()
+            case "end":
+                self.createEnd()
 
     def createStart(self):
         self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size*2, self.y + self.size, fill="white")
@@ -50,7 +53,15 @@ class Block:
         half = self.size
         points = [self.x, self.y - half, self.x + half, self.y, self.x, self.y + half, self.x - half, self.y]
         self.item = self.canvas.create_polygon(points, fill="white", outline="black")
-        self.text = self.canvas.create_text(self.x , self.y , text="Condition")
+        self.text = self.canvas.create_text(self.x , self.y , text="")
+        self.canvas.tag_bind(self.item, "<ButtonPress-1>", self.onLeftClick)
+        self.canvas.tag_bind(self.item, "<B1-Motion>", self.onDrag)
+        self.canvas.tag_bind(self.item, "<Button-3>", self.onRightClick)
+
+    def createEnd(self):
+        self.item = self.canvas.create_rectangle(self.x, self.y, self.x + self.size * 2, self.y + self.size,
+                                                 fill="white")
+        self.text = self.canvas.create_text(self.x + self.size, self.y + self.size / 2, text="End")
         self.canvas.tag_bind(self.item, "<ButtonPress-1>", self.onLeftClick)
         self.canvas.tag_bind(self.item, "<B1-Motion>", self.onDrag)
         self.canvas.tag_bind(self.item, "<Button-3>", self.onRightClick)
@@ -105,6 +116,7 @@ class Block:
             self.menu.add_command(label="Задати значення змінної", command=self.setVariableValue)
             self.menu.add_command(label="Видалити", command=self.delete)
         if(self.type == "condition"):
+            self.menu.add_command(label="Задати умову", command=self.setCondition)
             if self.conditionTrueBlock is None:
                 self.menu.add_command(label="Виконання умови", command=self.startTrueArrow)
             else:
@@ -169,6 +181,13 @@ class Block:
         self.variableValue = text
         x, y =self.get_center()
         self.text = self.canvas.create_text(x, y, text=f"{self.variableName}={self.variableValue}")
+
+    def setCondition(self):
+        text = simpledialog.askstring("Вписати текст", "Умова")
+        self.canvas.delete(self.text)
+        self.condition = text
+        x, y =self.get_center()
+        self.text = self.canvas.create_text(x, y, text=f"{self.condition}")
 
     def delete(self):
         for connectedFromBlock in self.connectedFromBlocks:
