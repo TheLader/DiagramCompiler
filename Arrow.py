@@ -1,5 +1,6 @@
 import tkinter as tk
 import math
+
 class Arrow:
     def __init__(self, canvas, source, target, text = ""):
         self.canvas = canvas

@@ -4,7 +4,6 @@ from tkinter import simpledialog
 class Block:
     _arrow = None
     _condition = None
-
     def __init__(self, canvas, x, y, type):
         self.canvas = canvas
         self.x = x
