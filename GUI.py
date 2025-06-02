@@ -10,7 +10,6 @@ class App:
         self.canvas = tk.Canvas(self.root, width=700, height=500, bg="white")
         self.canvas.pack(side="left", fill="both", expand=True)
         Block.Block(self.canvas, 70, 70, "start")
-        Block.Block(self.canvas, 70, 70, "end")
         sidebar = tk.Frame(self.root)
         sidebar.pack(side="right", fill="y")
         button_holder = tk.Frame(sidebar)
@@ -19,12 +18,11 @@ class App:
         tk.Button(button_holder, text="Додати змінну", command=self.addVariable).pack(pady=5)
         tk.Button(button_holder, text="Додати умову", command=self.addCondition).pack(pady=5)
         tk.Button(button_holder, text="Додати введення", command=self.addInput).pack(pady=5)
+        tk.Button(button_holder, text="Додати операцію", command=self.addOperation).pack(pady=5)
+        tk.Button(button_holder, text="Додати виведення", command=self.addOutput).pack(pady=5)
 
     def addStart(self):
         Block.Block(self.canvas, 70, 70, "start")
-
-    def addEnd(self):
-        Block.Block(self.canvas, 70, 70, "end")
 
     def addVariable(self):
         Block.Block(self.canvas, 70, 70, "variable")
@@ -34,3 +32,9 @@ class App:
 
     def addInput(self):
         Block.Block(self.canvas, 70, 70, "input")
+
+    def addOperation(self):
+        Block.Block(self.canvas, 70, 70, "operation")
+
+    def addOutput(self):
+        Block.Block(self.canvas, 70, 70, "output")
